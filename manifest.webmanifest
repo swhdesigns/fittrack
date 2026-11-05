@@ -4,11 +4,11 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0d1814",
-  "theme_color": "#10251d",
+  "background_color": "#101315",
+  "theme_color": "#101315",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "icon.svg?v=22",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
