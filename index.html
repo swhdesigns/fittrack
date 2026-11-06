@@ -166,20 +166,20 @@ if(!nutrition.creatine)nutrition.creatine={};
 const saveNutrition=()=>localStorage.setItem(nutritionKey,JSON.stringify(nutrition));
 let nutritionDate=today();
 const foodCatalog=[
-{re:/\\b(?:boiled |scrambled |fried )?eggs?\\b/i,unit:'each',cal:78,protein:6.3,defaultQty:1},
-{re:/\\bchicken breast\\b/i,unit:'g',cal:1.65,protein:.31,defaultQty:100},
-{re:/\\brice\\b/i,unit:'g',cal:1.3,protein:.027,defaultQty:100},
-{re:/\\bprotein shake\\b|\\bprotein powder\\b/i,unit:'serving',cal:120,protein:24,defaultQty:1},
-{re:/\\b(?:semi[- ]skimmed )?milk\\b/i,unit:'ml',cal:.47,protein:.036,defaultQty:250},
-{re:/\\bbanana\\b/i,unit:'each',cal:105,protein:1.3,defaultQty:1},
-{re:/\\b(?:wholemeal )?bread\\b|\\btoast\\b/i,unit:'slice',cal:90,protein:3.5,defaultQty:1},
-{re:/\\bcreatine\\b/i,unit:'supplement',cal:0,protein:0,defaultQty:5}
+{re:/\b(?:boiled |scrambled |fried )?eggs?\b/i,unit:'each',cal:78,protein:6.3,defaultQty:1},
+{re:/\bchicken breast\b/i,unit:'g',cal:1.65,protein:.31,defaultQty:100},
+{re:/\brice\b/i,unit:'g',cal:1.3,protein:.027,defaultQty:100},
+{re:/\bprotein shake\b|\bprotein powder\b/i,unit:'serving',cal:120,protein:24,defaultQty:1},
+{re:/\b(?:semi[- ]skimmed )?milk\b/i,unit:'ml',cal:.47,protein:.036,defaultQty:250},
+{re:/\bbanana\b/i,unit:'each',cal:105,protein:1.3,defaultQty:1},
+{re:/\b(?:wholemeal )?bread\b|\btoast\b/i,unit:'slice',cal:90,protein:3.5,defaultQty:1},
+{re:/\bcreatine\b/i,unit:'supplement',cal:0,protein:0,defaultQty:5}
 ];
 function foodEstimate(raw){
  const t=raw.trim(),f=foodCatalog.find(x=>x.re.test(t));
  if(!f)return null;
- const m=t.match(/(\\d+(?:\\.\\d+)?)\\s*(kg|g|grams?|ml|litres?|l)\\b/i);
- const leading=t.match(/^(\\d+(?:\\.\\d+)?)/);
+ const m=t.match(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|litres?|l)\b/i);
+ const leading=t.match(/^(\d+(?:\.\d+)?)/);
  let qty=m?Number(m[1]):leading?Number(leading[1]):f.defaultQty;
  if(m&&m[2].toLowerCase()==='kg')qty*=1000;
  if(m&&['l','litre','litres'].includes(m[2].toLowerCase()))qty*=1000;
