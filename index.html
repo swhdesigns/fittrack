@@ -163,6 +163,7 @@ const nutritionKey='fittrack-nutrition-v1';
 let nutrition;try{nutrition=JSON.parse(localStorage.getItem(nutritionKey))}catch{}
 if(!nutrition||!Array.isArray(nutrition.entries))nutrition={entries:[],proteinGoal:140,calorieGoal:2000,creatine:{}};
 if(!nutrition.creatine)nutrition.creatine={};
+if(!Array.isArray(nutrition.savedFoods))nutrition.savedFoods=[];
 const saveNutrition=()=>localStorage.setItem(nutritionKey,JSON.stringify(nutrition));
 let nutritionDate=today();
 const foodCatalog=[
@@ -176,7 +177,39 @@ const foodCatalog=[
 {re:/\b(?:boiled |cooked |sliced )?ham\b/i,unit:'slice',cal:24,protein:4,defaultQty:1},
 {re:/\bcreatine\b/i,unit:'supplement',cal:0,protein:0,defaultQty:5}
 ];
+
+function foodParts(name){
+ const t=String(name||'').toLowerCase().trim().replace(/\\s+/g,' ');
+ const m=t.match(/^(\\d+(?:\\.\\d+)?)\\s*(slices?|eggs?|pieces?|servings?|g|grams?|kg|ml|l)?\\s*(?:of\\s+)?(.+)$/i);
+ if(!m)return {key:t,qty:1,unit:'item'};
+ let qty=Number(m[1]),unit=(m[2]||'item').toLowerCase(),base=m[3].trim();
+ if(unit==='kg'){qty*=1000;unit='g'}if(unit==='l'){qty*=1000;unit='ml'}
+ if(unit.startsWith('slice'))unit='slice';else if(unit.startsWith('egg')){unit='item';base='egg '+base}else if(unit.startsWith('piece'))unit='piece';else if(unit.startsWith('serving'))unit='serving';else if(unit.startsWith('gram'))unit='g';
+ return {key:base,qty,unit};
+}
+function rememberedFood(name){
+ const p=foodParts(name),exact=nutrition.savedFoods.find(f=>f.name.toLowerCase().trim()===name.toLowerCase().trim());
+ if(exact)return {name,calories:exact.calories,protein:exact.protein,remembered:true};
+ const f=nutrition.savedFoods.find(f=>f.key===p.key&&f.unit===p.unit&&f.qty>0);
+ if(!f)return null;
+ return {name,calories:Math.round(f.calories*p.qty/f.qty),protein:Math.round(f.protein*p.qty/f.qty*10)/10,remembered:true};
+}
+function rememberFood(name,calories,protein){
+ const p=foodParts(name),record={name,key:p.key,unit:p.unit,qty:p.qty,calories,protein};
+ const idx=nutrition.savedFoods.findIndex(f=>f.key===p.key&&f.unit===p.unit);
+ if(idx>=0)nutrition.savedFoods[idx]=record;else nutrition.savedFoods.push(record);
+}
+function deleteSavedFood(index){if(!confirm('Forget this saved food? Diary entries will stay.'))return;nutrition.savedFoods.splice(index,1);saveNutrition();show('nutrition');}
+function editSavedFood(index){
+ const f=nutrition.savedFoods[index];if(!f)return;
+ const c=prompt('Calories for '+f.name,f.calories);if(c===null)return;
+ const p=prompt('Protein (g) for '+f.name,f.protein);if(p===null)return;
+ if(c.trim()===''||p.trim()===''||![Number(c),Number(p)].every(Number.isFinite)||Number(c)<0||Number(p)<0){alert('Enter valid calories and protein.');return}
+ f.calories=Number(c);f.protein=Number(p);saveNutrition();show('nutrition');
+}
+
 function foodEstimate(raw){
+ const remembered=rememberedFood(raw);if(remembered)return remembered;
  const t=raw.trim(),f=foodCatalog.find(x=>x.re.test(t));
  if(!f)return null;
  const m=t.match(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|litres?|l)\b/i);
@@ -198,11 +231,11 @@ function nutritionView(){
  '<section><h2>Quick food entry</h2><label>What have you eaten? <input id="foodText" style="width:100%;max-width:100%" placeholder="e.g. 3 boiled eggs" onkeydown="if(event.key===\'Enter\'){event.preventDefault();estimateFood()}"></label><button class="primary" onclick="estimateFood()">Estimate nutrition</button><div id="foodPreview" aria-live="polite"></div><p><small>Try: 3 boiled eggs, 300g chicken breast, 250ml milk, protein shake. For mixed meals, log ingredients separately. Unknown foods can be entered manually.</small></p><button onclick="manualFood()">Enter calories & protein manually</button></section>'+
  '<section><h2>Creatine</h2><label><input type="checkbox" '+(nutrition.creatine[nutritionDate]?'checked':'')+' onchange="nutrition.creatine[nutritionDate]=this.checked;saveNutrition();show(\'nutrition\')"> Taken today</label><small>Plain creatine adds no meaningful calories or protein.</small></section>'+
  '<section><h2>Food diary</h2>'+(day.length?day.map(x=>'<div class="history-session"><strong>'+esc(x.name)+'</strong><div class="muted">'+Number(x.calories)+' kcal · '+Number(x.protein)+'g protein</div><button class="danger" onclick="deleteFood(\''+esc(x.id)+'\')">Delete</button></div>').join(''):'<p class="muted">Nothing logged for this day yet.</p>')+'</section>'+
- '<section><h2>Daily targets</h2><label>Calories <input id="calGoal" type="number" min="1" value="'+nutrition.calorieGoal+'"></label><label>Protein (g) <input id="proGoal" type="number" min="1" value="'+nutrition.proteinGoal+'"></label><button onclick="setNutritionGoals()">Save targets</button><p><small>These are editable starting targets, not personalised recommendations.</small></p></section>';
+ '<section><h2>Saved foods</h2><p class="muted">Foods you log are remembered for next time. Edit or forget them here.</p>'+(nutrition.savedFoods.length?nutrition.savedFoods.map((f,i)=>'<div class="history-session"><strong>'+esc(f.name)+'</strong><div class="muted">'+f.calories+' kcal · '+f.protein+'g protein</div><button onclick="editSavedFood('+i+')">Edit</button> <button class="danger" onclick="deleteSavedFood('+i+')">Forget</button></div>').join(''):'<p class="muted">No saved foods yet.</p>')+'</section>'+ '<section><h2>Daily targets</h2><label>Calories <input id="calGoal" type="number" min="1" value="'+nutrition.calorieGoal+'"></label><label>Protein (g) <input id="proGoal" type="number" min="1" value="'+nutrition.proteinGoal+'"></label><button onclick="setNutritionGoals()">Save targets</button><p><small>These are editable starting targets, not personalised recommendations.</small></p></section>';
 }
 function estimateFood(){const t=document.getElementById('foodText').value;const e=foodEstimate(t);if(e?.creatine){nutrition.creatine[nutritionDate]=true;saveNutrition();show('nutrition');return}manualFood(e||{name:t,calories:0,protein:0,unknown:true});}
-function manualFood(e={name:'',calories:0,protein:0}){document.getElementById('foodPreview').innerHTML='<div class="history-session">'+(e.unknown?'<p role="status" style="color:#ffcc80"><strong>Food not recognised.</strong> Enter the calories and protein from the packaging before saving. Zero is not an estimate.</p>':'<p class="muted">Approximate estimate — check portion size and packaging.</p>')+'<label>Food <input id="foodName" value="'+esc(e.name)+'"></label><label>Estimated calories <input id="foodCalories" type="number" min="0" value="'+e.calories+'"></label><label>Protein (g) <input id="foodProtein" type="number" min="0" step="0.1" value="'+e.protein+'"></label><button onclick="saveFood()">Add to diary</button></div>';}
-function saveFood(){const name=document.getElementById('foodName').value.trim(),calories=Number(document.getElementById('foodCalories').value),protein=Number(document.getElementById('foodProtein').value);if(!name||![calories,protein].every(Number.isFinite)||calories<0||protein<0){alert('Enter a food name and valid values.');return}nutrition.entries.push({id:String(Date.now())+'-'+Math.random().toString(36).slice(2),date:nutritionDate,name,calories,protein});saveNutrition();show('nutrition');}
+function manualFood(e={name:'',calories:0,protein:0}){document.getElementById('foodPreview').innerHTML='<div class="history-session">'+(e.unknown?'<p role="status" style="color:#ffcc80"><strong>Food not recognised.</strong> Enter the calories and protein from the packaging before saving. Zero is not an estimate.</p>' :'<p class="muted">'+(e.remembered?'Using your saved food values.':'Approximate estimate — check portion size and packaging.')+'</p>')+'<label>Food <input id="foodName" value="'+esc(e.name)+'"></label><label>Estimated calories <input id="foodCalories" type="number" min="0" value="'+e.calories+'"></label><label>Protein (g) <input id="foodProtein" type="number" min="0" step="0.1" value="'+e.protein+'"></label><button onclick="saveFood()">Add to diary</button></div>';}
+function saveFood(){const name=document.getElementById('foodName').value.trim(),calories=Number(document.getElementById('foodCalories').value),protein=Number(document.getElementById('foodProtein').value);if(!name||![calories,protein].every(Number.isFinite)||calories<0||protein<0){alert('Enter a food name and valid values.');return}nutrition.entries.push({id:String(Date.now())+'-'+Math.random().toString(36).slice(2),date:nutritionDate,name,calories,protein});rememberFood(name,calories,protein);saveNutrition();show('nutrition');}
 function deleteFood(id){if(!confirm('Delete this food entry?'))return;nutrition.entries=nutrition.entries.filter(x=>x.id!==id);saveNutrition();show('nutrition');}
 function setNutritionGoals(){const c=Number(document.getElementById('calGoal').value),p=Number(document.getElementById('proGoal').value);if(c<=0||p<=0||!Number.isFinite(c)||!Number.isFinite(p)){alert('Enter positive targets.');return}nutrition.calorieGoal=c;nutrition.proteinGoal=p;saveNutrition();show('nutrition');}
 
