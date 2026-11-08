@@ -241,6 +241,16 @@ function setNutritionGoals(){const c=Number(document.getElementById('calGoal').v
 
 
 
+/* Two-day full-body programme for ~45-minute gym visits. Add once; preserve history. */
+const ft45Id='full-body-45-2026';
+if(!library.programs.some(p=>p.id===ft45Id)){
+ library.programs.push({id:ft45Id,name:'Full Body — 45 Minutes (2 Days)',workouts:[
+ {id:'ft45-a',name:'Workout A — Full Body',exercises:[['Chest press machine',3,'8–12'],['Lat pulldown',3,'8–12'],['Leg press',3,'10–12'],['Shoulder press machine',2,'8–12'],['Tricep rope pushdown',2,'10–12'],['Dumbbell bicep curls',2,'10–12']]},
+ {id:'ft45-b',name:'Workout B — Full Body',exercises:[['Incline dumbbell press',3,'8–12'],['Seated cable row',3,'8–12'],['Leg curl machine',3,'10–12'],['Dumbbell lateral raises',2,'12–15'],['Overhead tricep extension',2,'10–12'],['Hammer curls',2,'10–12']]}
+ ]});
+ if(!session)library.active=ft45Id;
+ saveLibrary();
+}
 /* Current gym four-day programme: additive, never replace existing routines */
 const ftGymProgramId='current-gym-2026';
 const ftGymWorkouts=[
