@@ -240,6 +240,20 @@ function deleteFood(id){if(!confirm('Delete this food entry?'))return;nutrition.
 function setNutritionGoals(){const c=Number(document.getElementById('calGoal').value),p=Number(document.getElementById('proGoal').value);if(c<=0||p<=0||!Number.isFinite(c)||!Number.isFinite(p)){alert('Enter positive targets.');return}nutrition.calorieGoal=c;nutrition.proteinGoal=p;saveNutrition();show('nutrition');}
 
 
+
+/* Current gym four-day programme: additive, never replace existing routines */
+const ftGymProgramId='current-gym-2026';
+const ftGymWorkouts=[
+ {id:'ft-chest-triceps',name:'Chest & Triceps',exercises:[['Chest press machine',3,'8–12'],['Incline dumbbell press',3,'8–12'],['Pec deck',3,'10–12'],['Incline bench press',3,'8–12'],['Tricep rope pushdown',3,'10–12'],['Overhead tricep extension',3,'10–12'],['Dips',3,'8–12']]},
+ {id:'ft-back-biceps',name:'Back & Biceps',exercises:[['Lat pulldown',3,'8–12'],['Seated cable row',3,'8–12'],['Assisted pull-up',3,'6–10'],['Dumbbell bicep curls',3,'10–12'],['Hammer curls',3,'10–12']]},
+ {id:'ft-shoulders',name:'Shoulders',exercises:[['Shoulder press machine',3,'8–12'],['Dumbbell lateral raises',3,'12–15'],['Reverse pec deck',3,'12–15'],['Face pulls',3,'12–15']]},
+ {id:'ft-legs',name:'Legs',exercises:[['Leg press',3,'10–12'],['Leg curl machine',3,'10–12'],['Leg extension',3,'10–12'],['Romanian deadlift (dumbbells)',3,'8–12'],['Standing calf raises',3,'12–15']]}
+];
+if(!library.programs.some(p=>p.id===ftGymProgramId)){
+ library.programs.push({id:ftGymProgramId,name:'My Gym — 4 Day Split',workouts:ftGymWorkouts});
+ if(!session)library.active=ftGymProgramId;
+ saveLibrary();
+}
 /* FitTrack enhanced logging and completion summary */
 const ftOldRenderWorkout=renderWorkout;
 renderWorkout=function(){
