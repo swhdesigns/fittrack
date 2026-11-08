@@ -346,5 +346,52 @@ show=function(page){ftOldShow(page);if(page==='progress'){
  document.getElementById('ft-stat-exercise').onchange=draw;draw();
 }};
 
+
+/* Optional low-fatigue upper-body pump session and history-based weight suggestions. */
+const ftPumpProgram=library.programs.find(p=>p.id==='full-body-45-2026');
+if(ftPumpProgram&&!ftPumpProgram.workouts.some(w=>w.id==='ft45-pump')){
+ ftPumpProgram.workouts.push({id:'ft45-pump',name:'Optional — Chest, Shoulders & Arms Pump',exercises:[
+ ['Pec deck',2,'12–15'],['Dumbbell lateral raises',3,'12–20'],['Face pulls',2,'15–20'],
+ ['Tricep rope pushdown',2,'12–15'],['Dumbbell bicep curls',2,'12–15'],['Cable crunches',2,'12–15']
+ ]});
+ saveLibrary();
+}
+function ftPumpSuggestion(name){
+ const eligible=new Set(['ft45-a','ft45-b']);
+ const matching=data.gym.filter(r=>r.exercise===name&&r.setType!=='warmup'&&
+  (eligible.has(r.day)||eligible.has(r.workoutId)||r.workoutName==='Workout A — Full Body'||r.workoutName==='Workout B — Full Body')&&
+  Number(r.kg)>0&&Number(r.reps)>0);
+ matching.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(Number(b.setNumber)||0)-(Number(a.setNumber)||0));
+ const latest=matching[0];
+ if(!latest)return null;
+ const base=Number(latest.kg);
+ const isDumbbell=/dumbbell/i.test(name);
+ const increment=isDumbbell?1:2.5;
+ const suggested=Math.max(increment,Math.round(base*0.75/increment)*increment);
+ return {base,suggested,date:latest.date};
+}
+const ftPumpOldRender=renderWorkout;
+renderWorkout=function(){
+ ftPumpOldRender();
+ if(!session||session.day!=='ft45-pump')return;
+ document.querySelectorAll('#workout .exercise-card').forEach((card,ei)=>{
+  const name=session.snapshot?.exercises?.[ei]?.[0];
+  if(!name)return;
+  const result=ftPumpSuggestion(name);
+  const message=document.createElement('p');
+  message.className='muted';
+  message.style.cssText='margin:8px 0;font-size:.85rem';
+  if(result){
+   message.textContent='Pump suggestion: '+result.suggested+' kg (75% of '+result.base+' kg from '+result.date+'). Adjust for available weights; aim for 2–4 reps in reserve.';
+   card.querySelectorAll('.set-row').forEach((row,si)=>{
+    const existing=data.gym.some(r=>r.sessionId===session.id&&r.exercise===name&&r.setNumber===si+1);
+    if(existing)return;
+    const input=document.getElementById('kg-'+session.day+'-'+ei+'-'+si);
+    if(input)input.value=result.suggested;
+   });
+  }else message.textContent='No matching weight from Full Body A/B yet. Choose a comfortable starting weight; aim for 2–4 reps in reserve.';
+  card.querySelector('.exercise-head')?.after(message);
+ });
+};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});show('dashboard');
 </script></body></html>
